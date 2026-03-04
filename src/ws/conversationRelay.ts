@@ -3,6 +3,7 @@ import { IncomingMessage } from 'http';
 import twilio from 'twilio';
 import { config } from '../config';
 import { logger, maskPhone } from '../logger';
+import { answerFaqWithAI } from '../core/ai';
 import {
   createSession,
   getSession,
@@ -41,7 +42,7 @@ interface PromptEvent {
 
 interface DtmfEvent {
   type: 'dtmf';
-  // Pode vir como "digit" ou "digits" dependendo da versão
+  // Pode vir como "digit" (singular) ou "digits" (plural) dependendo da versão
   digit?: string;
   digits?: string;
 }
@@ -183,6 +184,29 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
     return;
   }
 
+  // IA FAQ (somente antes de autenticar e antes de iniciar o fluxo de OTP)
+  if (session.authStatus !== 'approved' && session.state === 'GREETING') {
+    const txt = String(input ?? '').trim();
+
+    // Não deixa IA interferir em inputs de menu/atalhos numéricos
+    const looksLikeMenuChoice = /^[1234]$/.test(txt);
+    const looksLikeOtp = /^\d{6}$/.test(txt);
+
+    if (!looksLikeMenuChoice && !looksLikeOtp) {
+      const ai = await Promise.race([
+        answerFaqWithAI(txt),
+        new Promise<{ answer: string; shouldEscalate: boolean }>((r) =>
+          setTimeout(() => r({ answer: '', shouldEscalate: true }), 1500),
+        ),
+      ]);
+
+      if (!ai.shouldEscalate && ai.answer) {
+        speak(ws, ai.answer);
+        return;
+      }
+    }
+  }
+
   switch (session.state) {
     case 'CHOOSING_AUTH_CHANNEL': {
       const channel = parseChannelChoice(input);
@@ -198,7 +222,7 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
         speak(
           ws,
           `Ok, enviei o código por ${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'}. ` +
-            `Agora, por favor, digite os 6 números no teclado do seu telefone.`
+            `Agora, por favor, digite os 6 números no teclado do seu telefone.`,
         );
         updateSession(callSid, { state: 'WAITING_CODE', dtmfBuffer: '' });
       } catch {
@@ -209,9 +233,8 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
 
     case 'WAITING_CODE': {
       // Preferência total: DTMF (vem 1 dígito por evento). Se vier fala com 6 dígitos, também funciona.
-      const digitsOnly = input.replace(/\D/g, '');
+      const digitsOnly = String(input ?? '').replace(/\D/g, '');
 
-      // acumula até 6
       const next = (session.dtmfBuffer + digitsOnly).slice(0, 6);
       updateSession(callSid, { dtmfBuffer: next });
 
@@ -274,7 +297,7 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
     }
 
     case 'WAITING_ORDER_ID': {
-      const orderIdMatch = input.replace(/\s/g, '').match(/[A-Z]?ORD[-]?\d+|#?\d{3,}/i);
+      const orderIdMatch = String(input ?? '').replace(/\s/g, '').match(/[A-Z]?ORD[-]?\d+|#?\d{3,}/i);
       const orderId = orderIdMatch ? orderIdMatch[0].replace('#', '').toUpperCase() : null;
 
       if (!orderId) {
@@ -287,7 +310,7 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
         speak(
           ws,
           `Não encontrei o pedido ${orderId} associado a este número. ` +
-            `Verifique o número e tente de novo, ou diga "atendente" para falar com alguém.`
+            `Verifique o número e tente de novo, ou diga "atendente" para falar com alguém.`,
         );
         return;
       }
@@ -301,7 +324,7 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
       speak(
         ws,
         `Encontrei o pedido ${order.id}: ${order.itemSummary}, status ${order.statusLabel}. ` +
-          `Qual o problema? Atraso, item faltando ou outro?`
+          `Qual o problema? Atraso, item faltando ou outro?`,
       );
       break;
     }
@@ -320,7 +343,7 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
           speak(
             ws,
             'Não entendi bem. Pode descrever o problema de outra forma? ' +
-              'Por exemplo: "meu pedido atrasou", "veio um item errado", ou "tenho uma dúvida sobre cobrança".'
+              'Por exemplo: "meu pedido atrasou", "veio um item errado", ou "tenho uma dúvida sobre cobrança".',
           );
         }
         return;
@@ -371,7 +394,7 @@ async function presentLastOrder(ws: WebSocket, callSid: string, phone: string): 
     speak(
       ws,
       'Não encontrei pedidos recentes associados a este número. ' +
-        'Pode me dizer o número do pedido que quer consultar?'
+        'Pode me dizer o número do pedido que quer consultar?',
     );
     updateSession(callSid, { state: 'WAITING_ORDER_ID' });
     return;
@@ -390,7 +413,7 @@ async function presentLastOrder(ws: WebSocket, callSid: string, phone: string): 
     `${prefix}Validado. Encontrei um pedido recente associado a este número: ` +
       `pedido ${order.id}, ${order.itemSummary}, ` +
       `status ${order.statusLabel} com previsão ${order.eta}. ` +
-      `É sobre esse pedido — diga um — ou sobre outro — diga dois?`
+      `É sobre esse pedido — diga um — ou sobre outro — diga dois?`,
   );
 
   logger.info('last_order_presented', {
@@ -494,7 +517,7 @@ export function createConversationRelayWss(path: string): WebSocketServer {
         callSid = event.callSid;
         const phone = event.from;
 
-        const session = createSession(callSid, phone);
+        createSession(callSid, phone);
 
         logger.info('voice_session_created', {
           callSid,
@@ -505,7 +528,7 @@ export function createConversationRelayWss(path: string): WebSocketServer {
           ws,
           'Oi. Reconheci este número como cadastrado. ' +
             'Antes de acessar seus pedidos, vou validar sua identidade rapidinho. ' +
-            'Quer receber o código por WhatsApp ou por SMS?'
+            'Quer receber o código por WhatsApp ou por SMS?',
         );
 
         updateSession(callSid, { state: 'CHOOSING_AUTH_CHANNEL' });
