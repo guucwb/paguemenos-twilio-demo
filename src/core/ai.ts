@@ -26,7 +26,7 @@ export async function answerFaqWithAI(userText: string): Promise<AIAnswer> {
       model: 'gpt-4.1-mini',
       temperature: 0.2,
       messages: [
-        { role: 'system', content: SYSTEM },
+        { role: 'system', content: SYSTEM.trim() },
         { role: 'user', content: userText },
       ],
       response_format: { type: 'json_object' },
@@ -37,13 +37,15 @@ export async function answerFaqWithAI(userText: string): Promise<AIAnswer> {
     return { answer: '', shouldEscalate: true };
   }
 
-  const data = await resp.json();
-  const content = data?.choices?.[0]?.message?.content ?? '{}';
+  // ✅ Tipagem "any" para não travar build com TS
+  const data: any = await resp.json();
+  const content: string = data?.choices?.[0]?.message?.content ?? '{}';
 
   try {
     const parsed = JSON.parse(content);
-    const answer = String(parsed.answer ?? '').trim();
-    const shouldEscalate = Boolean(parsed.shouldEscalate);
+    const answer = String(parsed?.answer ?? '').trim();
+    const shouldEscalate = Boolean(parsed?.shouldEscalate);
+
     return { answer, shouldEscalate: shouldEscalate || !answer };
   } catch {
     return { answer: '', shouldEscalate: true };
