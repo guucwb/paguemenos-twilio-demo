@@ -1,0 +1,661 @@
+[
+  {
+    "id": "ORD-001",
+    "customerId": "CUST-001",
+    "phoneNumber": "+551190000885",
+    "items": [
+      {
+        "name": "Desodorante Aerossol 150ml",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "1x Desodorante Aerossol 150ml",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "06/03",
+    "confidence": "high",
+    "createdAt": "2026-03-04T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-002",
+    "customerId": "CUST-001",
+    "phoneNumber": "+551190000885",
+    "items": [
+      {
+        "name": "Sabonete Líquido Lavanda 500ml",
+        "unit": "und",
+        "qty": 3
+      },
+      {
+        "name": "Creme Hidratante Corporal 300g",
+        "unit": "und",
+        "qty": 1
+      },
+      {
+        "name": "Fio Dental 50m",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "3x Sabonete Líquido Lavanda 500ml e mais 2 itens",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "05/03",
+    "confidence": "low",
+    "createdAt": "2026-02-20T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-004",
+    "customerId": "CUST-002",
+    "phoneNumber": "+551190011833",
+    "items": [
+      {
+        "name": "Lenços Umedecidos Baby",
+        "unit": "pct",
+        "qty": 1
+      },
+      {
+        "name": "Condicionador Nutritivo 400ml",
+        "unit": "und",
+        "qty": 2
+      }
+    ],
+    "itemSummary": "1x Lenços Umedecidos Baby e mais 1 item",
+    "status": "processing",
+    "statusLabel": "em preparação",
+    "eta": "07/03",
+    "confidence": "medium",
+    "createdAt": "2026-03-03T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-005",
+    "customerId": "CUST-002",
+    "phoneNumber": "+551190011833",
+    "items": [
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 1
+      },
+      {
+        "name": "Shampoo Hidratante 400ml",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "1x Fralda Descartável Tamanho M e mais 1 item",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-03-01T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-007",
+    "customerId": "CUST-003",
+    "phoneNumber": "+551190022572",
+    "items": [
+      {
+        "name": "Absorvente Noturno",
+        "unit": "pct",
+        "qty": 1
+      },
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 1
+      },
+      {
+        "name": "Lenços Umedecidos Baby",
+        "unit": "pct",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "1x Absorvente Noturno e mais 2 itens",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "06/03",
+    "confidence": "high",
+    "createdAt": "2026-03-03T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-008",
+    "customerId": "CUST-003",
+    "phoneNumber": "+551190022572",
+    "items": [
+      {
+        "name": "Sabonete Líquido Lavanda 500ml",
+        "unit": "und",
+        "qty": 2
+      },
+      {
+        "name": "Creme Hidratante Corporal 300g",
+        "unit": "und",
+        "qty": 3
+      },
+      {
+        "name": "Desodorante Aerossol 150ml",
+        "unit": "und",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "2x Sabonete Líquido Lavanda 500ml e mais 2 itens",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "06/03",
+    "confidence": "low",
+    "createdAt": "2026-02-26T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-010",
+    "customerId": "CUST-004",
+    "phoneNumber": "+551190033475",
+    "items": [
+      {
+        "name": "Creme Hidratante Corporal 300g",
+        "unit": "und",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "3x Creme Hidratante Corporal 300g",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "04/03",
+    "confidence": "low",
+    "createdAt": "2026-03-02T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-011",
+    "customerId": "CUST-004",
+    "phoneNumber": "+551190033475",
+    "items": [
+      {
+        "name": "Lenços Umedecidos Baby",
+        "unit": "pct",
+        "qty": 1
+      },
+      {
+        "name": "Sabonete Líquido Lavanda 500ml",
+        "unit": "und",
+        "qty": 3
+      },
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "1x Lenços Umedecidos Baby e mais 2 itens",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "06/03",
+    "confidence": "low",
+    "createdAt": "2026-03-01T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-012",
+    "customerId": "CUST-004",
+    "phoneNumber": "+551190033475",
+    "items": [
+      {
+        "name": "Absorvente Noturno",
+        "unit": "pct",
+        "qty": 3
+      },
+      {
+        "name": "Creme Hidratante Corporal 300g",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "3x Absorvente Noturno e mais 1 item",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "04/03",
+    "confidence": "low",
+    "createdAt": "2026-02-22T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-013",
+    "customerId": "CUST-005",
+    "phoneNumber": "+551190045016",
+    "items": [
+      {
+        "name": "Shampoo Hidratante 400ml",
+        "unit": "und",
+        "qty": 2
+      },
+      {
+        "name": "Condicionador Nutritivo 400ml",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "2x Shampoo Hidratante 400ml e mais 1 item",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "04/03",
+    "confidence": "low",
+    "createdAt": "2026-03-03T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-014",
+    "customerId": "CUST-005",
+    "phoneNumber": "+551190045016",
+    "items": [
+      {
+        "name": "Sabonete Líquido Lavanda 500ml",
+        "unit": "und",
+        "qty": 1
+      },
+      {
+        "name": "Fio Dental 50m",
+        "unit": "und",
+        "qty": 2
+      },
+      {
+        "name": "Desodorante Aerossol 150ml",
+        "unit": "und",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "1x Sabonete Líquido Lavanda 500ml e mais 2 itens",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-02-28T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-016",
+    "customerId": "CUST-006",
+    "phoneNumber": "+551190056461",
+    "items": [
+      {
+        "name": "Cotonete 100un",
+        "unit": "cx",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "1x Cotonete 100un",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "04/03",
+    "confidence": "high",
+    "createdAt": "2026-03-02T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-017",
+    "customerId": "CUST-006",
+    "phoneNumber": "+551190056461",
+    "items": [
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 3
+      },
+      {
+        "name": "Protetor Solar FPS 50 200ml",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "3x Fralda Descartável Tamanho M e mais 1 item",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "06/03",
+    "confidence": "low",
+    "createdAt": "2026-02-18T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-019",
+    "customerId": "CUST-007",
+    "phoneNumber": "+551190067599",
+    "items": [
+      {
+        "name": "Desodorante Aerossol 150ml",
+        "unit": "und",
+        "qty": 3
+      },
+      {
+        "name": "Escova de Dente Macia",
+        "unit": "und",
+        "qty": 1
+      },
+      {
+        "name": "Creme Hidratante Corporal 300g",
+        "unit": "und",
+        "qty": 2
+      }
+    ],
+    "itemSummary": "3x Desodorante Aerossol 150ml e mais 2 itens",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "05/03",
+    "confidence": "low",
+    "createdAt": "2026-03-02T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-020",
+    "customerId": "CUST-007",
+    "phoneNumber": "+551190067599",
+    "items": [
+      {
+        "name": "Cotonete 100un",
+        "unit": "cx",
+        "qty": 3
+      },
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 3
+      },
+      {
+        "name": "Shampoo Hidratante 400ml",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "3x Cotonete 100un e mais 2 itens",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "05/03",
+    "confidence": "low",
+    "createdAt": "2026-02-24T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-021",
+    "customerId": "CUST-007",
+    "phoneNumber": "+551190067599",
+    "items": [
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "1x Fralda Descartável Tamanho M",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-02-26T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-022",
+    "customerId": "CUST-008",
+    "phoneNumber": "+551190078260",
+    "items": [
+      {
+        "name": "Desodorante Aerossol 150ml",
+        "unit": "und",
+        "qty": 3
+      },
+      {
+        "name": "Sabonete Líquido Lavanda 500ml",
+        "unit": "und",
+        "qty": 1
+      },
+      {
+        "name": "Condicionador Nutritivo 400ml",
+        "unit": "und",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "3x Desodorante Aerossol 150ml e mais 2 itens",
+    "status": "out_for_delivery",
+    "statusLabel": "saiu para entrega",
+    "eta": "hoje até às 18h",
+    "confidence": "high",
+    "createdAt": "2026-03-04T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-023",
+    "customerId": "CUST-008",
+    "phoneNumber": "+551190078260",
+    "items": [
+      {
+        "name": "Perfume Floral 100ml",
+        "unit": "und",
+        "qty": 3
+      },
+      {
+        "name": "Absorvente Noturno",
+        "unit": "pct",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "3x Perfume Floral 100ml e mais 1 item",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "04/03",
+    "confidence": "low",
+    "createdAt": "2026-02-24T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-024",
+    "customerId": "CUST-008",
+    "phoneNumber": "+551190078260",
+    "items": [
+      {
+        "name": "Sabonete Líquido Lavanda 500ml",
+        "unit": "und",
+        "qty": 2
+      },
+      {
+        "name": "Escova de Dente Macia",
+        "unit": "und",
+        "qty": 2
+      },
+      {
+        "name": "Lenços Umedecidos Baby",
+        "unit": "pct",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "2x Sabonete Líquido Lavanda 500ml e mais 2 itens",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-02-18T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-025",
+    "customerId": "CUST-009",
+    "phoneNumber": "+551190089181",
+    "items": [
+      {
+        "name": "Shampoo Hidratante 400ml",
+        "unit": "und",
+        "qty": 1
+      },
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "1x Shampoo Hidratante 400ml e mais 1 item",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "04/03",
+    "confidence": "low",
+    "createdAt": "2026-03-03T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-026",
+    "customerId": "CUST-009",
+    "phoneNumber": "+551190089181",
+    "items": [
+      {
+        "name": "Shampoo Hidratante 400ml",
+        "unit": "und",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "3x Shampoo Hidratante 400ml",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-02-28T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-028",
+    "customerId": "CUST-010",
+    "phoneNumber": "+551190100931",
+    "items": [
+      {
+        "name": "Cotonete 100un",
+        "unit": "cx",
+        "qty": 2
+      },
+      {
+        "name": "Perfume Floral 100ml",
+        "unit": "und",
+        "qty": 2
+      },
+      {
+        "name": "Protetor Solar FPS 50 200ml",
+        "unit": "und",
+        "qty": 2
+      }
+    ],
+    "itemSummary": "2x Cotonete 100un e mais 2 itens",
+    "status": "shipped",
+    "statusLabel": "em trânsito",
+    "eta": "06/03",
+    "confidence": "high",
+    "createdAt": "2026-03-02T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-029",
+    "customerId": "CUST-010",
+    "phoneNumber": "+551190100931",
+    "items": [
+      {
+        "name": "Condicionador Nutritivo 400ml",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "1x Condicionador Nutritivo 400ml",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-02-27T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-030",
+    "customerId": "CUST-010",
+    "phoneNumber": "+551190100931",
+    "items": [
+      {
+        "name": "Creme Hidratante Corporal 300g",
+        "unit": "und",
+        "qty": 1
+      },
+      {
+        "name": "Desodorante Aerossol 150ml",
+        "unit": "und",
+        "qty": 3
+      },
+      {
+        "name": "Lenços Umedecidos Baby",
+        "unit": "pct",
+        "qty": 3
+      }
+    ],
+    "itemSummary": "1x Creme Hidratante Corporal 300g e mais 2 itens",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-02-23T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-DEMO-WA-001",
+    "customerId": "CUST-DEMO-WA",
+    "phoneNumber": "+554191039019",
+    "items": [
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 1
+      },
+      {
+        "name": "Lenços Umedecidos Baby",
+        "unit": "pct",
+        "qty": 2
+      }
+    ],
+    "itemSummary": "1x Fralda Descartável Tamanho M e mais 1 item",
+    "status": "out_for_delivery",
+    "statusLabel": "saiu para entrega",
+    "eta": "hoje até às 18h",
+    "confidence": "high",
+    "createdAt": "2026-03-04T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-DEMO-WA-002",
+    "customerId": "CUST-DEMO-WA",
+    "phoneNumber": "+554191039019",
+    "items": [
+      {
+        "name": "Shampoo Hidratante 400ml",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "1x Shampoo Hidratante 400ml",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-02-22T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-DEMO-PSTN-001",
+    "customerId": "CUST-DEMO-PSTN",
+    "phoneNumber": "+5541991039019",
+    "items": [
+      {
+        "name": "Fralda Descartável Tamanho M",
+        "unit": "pct",
+        "qty": 1
+      },
+      {
+        "name": "Lenços Umedecidos Baby",
+        "unit": "pct",
+        "qty": 2
+      }
+    ],
+    "itemSummary": "1x Fralda Descartável Tamanho M e mais 1 item",
+    "status": "out_for_delivery",
+    "statusLabel": "saiu para entrega",
+    "eta": "hoje até às 18h",
+    "confidence": "high",
+    "createdAt": "2026-03-04T02:25:12.797Z"
+  },
+  {
+    "id": "ORD-DEMO-PSTN-002",
+    "customerId": "CUST-DEMO-PSTN",
+    "phoneNumber": "+5541991039019",
+    "items": [
+      {
+        "name": "Shampoo Hidratante 400ml",
+        "unit": "und",
+        "qty": 1
+      }
+    ],
+    "itemSummary": "1x Shampoo Hidratante 400ml",
+    "status": "delivered",
+    "statusLabel": "entregue",
+    "eta": "já entregue",
+    "confidence": "low",
+    "createdAt": "2026-02-22T02:25:12.797Z"
+  }
+]

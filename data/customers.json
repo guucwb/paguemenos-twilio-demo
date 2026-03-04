@@ -1,0 +1,86 @@
+[
+  {
+    "id": "CUST-001",
+    "phoneNumber": "+551190000885",
+    "name": "Ana Santos",
+    "email": "ana.santos@email.example",
+    "cpf": "***.***.572-**"
+  },
+  {
+    "id": "CUST-002",
+    "phoneNumber": "+551190011833",
+    "name": "Carlos Martins",
+    "email": "carlos.martins@email.example",
+    "cpf": "***.***.604-**"
+  },
+  {
+    "id": "CUST-003",
+    "phoneNumber": "+551190022572",
+    "name": "Fernanda Souza",
+    "email": "fernanda.souza@email.example",
+    "cpf": "***.***.272-**"
+  },
+  {
+    "id": "CUST-004",
+    "phoneNumber": "+551190033475",
+    "name": "Rodrigo Martins",
+    "email": "rodrigo.martins@email.example",
+    "cpf": "***.***.929-**"
+  },
+  {
+    "id": "CUST-005",
+    "phoneNumber": "+551190045016",
+    "name": "Juliana Santos",
+    "email": "juliana.santos@email.example",
+    "cpf": "***.***.407-**"
+  },
+  {
+    "id": "CUST-006",
+    "phoneNumber": "+551190056461",
+    "name": "Marcos Santos",
+    "email": "marcos.santos@email.example",
+    "cpf": "***.***.883-**"
+  },
+  {
+    "id": "CUST-007",
+    "phoneNumber": "+551190067599",
+    "name": "Patrícia Costa",
+    "email": "patrícia.costa@email.example",
+    "cpf": "***.***.886-**"
+  },
+  {
+    "id": "CUST-008",
+    "phoneNumber": "+551190078260",
+    "name": "Eduardo Souza",
+    "email": "eduardo.souza@email.example",
+    "cpf": "***.***.449-**"
+  },
+  {
+    "id": "CUST-009",
+    "phoneNumber": "+551190089181",
+    "name": "Beatriz Pereira",
+    "email": "beatriz.pereira@email.example",
+    "cpf": "***.***.731-**"
+  },
+  {
+    "id": "CUST-010",
+    "phoneNumber": "+551190100931",
+    "name": "Rafael Souza",
+    "email": "rafael.souza@email.example",
+    "cpf": "***.***.405-**"
+  },
+  {
+    "id": "CUST-DEMO-WA",
+    "phoneNumber": "+554191039019",
+    "name": "Patrícia Demo",
+    "email": "patricia.demo.ord-demo-wa@email.example",
+    "cpf": "***.***.***-**"
+  },
+  {
+    "id": "CUST-DEMO-PSTN",
+    "phoneNumber": "+5541991039019",
+    "name": "Patrícia Demo",
+    "email": "patricia.demo.ord-demo-pstn@email.example",
+    "cpf": "***.***.***-**"
+  }
+]

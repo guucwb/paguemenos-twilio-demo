@@ -10,7 +10,7 @@ node_modules/
 dist/
 
 # Data gerada pelo seed (não versionar dados reais)
-data/*.json
+#data/*.json
 data/*.sqlite
 data/*.db
 
