@@ -4,6 +4,10 @@
  * Gera /data/customers.json e /data/orders.json com dados fictícios realistas.
  * NENHUM dado real é incluído. Todos os números são fictícios.
  * Produtos: itens neutros de higiene/beleza/cuidados pessoais (sem medicamentos).
+ *
+ * EXCEÇÃO (demo interna):
+ * - Inclui UM cliente "Patrícia Demo" com o número +5541991039019 para você testar no seu WhatsApp.
+ * - Não inclui CPF real nem dados sensíveis (somente máscaras).
  */
 
 import fs from 'fs';
@@ -67,7 +71,7 @@ const STATUSES: { status: string; statusLabel: string; confidence: string }[] = 
   { status: 'out_for_delivery', statusLabel: 'saiu para entrega', confidence: 'high' },
   { status: 'shipped', statusLabel: 'em trânsito', confidence: 'high' },
   { status: 'processing', statusLabel: 'em preparação', confidence: 'medium' },
-  { status: 'shipped', statusLabel: 'em trânsito', confidence: 'low' },   // antigo
+  { status: 'shipped', statusLabel: 'em trânsito', confidence: 'low' }, // antigo
   { status: 'delivered', statusLabel: 'entregue', confidence: 'high' },
 ];
 
@@ -88,7 +92,8 @@ function pad(n: number): string {
 function etaFromStatus(status: string): string {
   const today = new Date();
   switch (status) {
-    case 'out_for_delivery': return 'hoje até às 18h';
+    case 'out_for_delivery':
+      return 'hoje até às 18h';
     case 'shipped': {
       const d = new Date(today);
       d.setDate(d.getDate() + randInt(1, 3));
@@ -147,15 +152,15 @@ for (let i = 0; i < 10; i++) {
 
     for (let k = 0; k < numItems; k++) {
       let idx: number;
-      do { idx = Math.floor(Math.random() * PRODUCTS.length); } while (usedProducts.has(idx));
+      do {
+        idx = Math.floor(Math.random() * PRODUCTS.length);
+      } while (usedProducts.has(idx));
       usedProducts.add(idx);
       items.push({ ...PRODUCTS[idx], qty: randInt(1, 3) });
     }
 
     // Pedido mais recente tem status ativo; anteriores podem ser entregues
-    const statusPool = j === 0
-      ? STATUSES.slice(0, 4)  // ativo
-      : STATUSES.slice(3);    // entregue ou em trânsito antigo
+    const statusPool = j === 0 ? STATUSES.slice(0, 4) : STATUSES.slice(3);
 
     const statusInfo = rand(statusPool);
     const daysAgo = j === 0 ? randInt(0, 2) : randInt(3, 14);
@@ -175,6 +180,55 @@ for (let i = 0; i < 10; i++) {
   }
 }
 
+// ── Cliente fixo para demo (seu número) ───────────────────────────────────────
+// IMPORTANTE: uso apenas interno para facilitar testes ao vivo.
+// Sem CPF real, sem dados sensíveis.
+const DEMO_PHONE = '+5541991039019';
+const demoCustomerId = 'CUST-DEMO';
+
+customers.push({
+  id: demoCustomerId,
+  phoneNumber: DEMO_PHONE,
+  name: 'Gustavo Demo',
+  email: 'gustsantos@twilio.com',
+  cpf: '***.***.***-**',
+});
+
+// Pedido recente (ativo / high confidence)
+const demoItems1: OrderItem[] = [
+  { name: 'Fralda Descartável Tamanho M', unit: 'pct', qty: 1 },
+  { name: 'Lenços Umedecidos Baby', unit: 'pct', qty: 2 },
+];
+
+orders.push({
+  id: 'ORD-DEMO-001',
+  customerId: demoCustomerId,
+  phoneNumber: DEMO_PHONE,
+  items: demoItems1,
+  itemSummary: buildItemSummary(demoItems1),
+  status: 'out_for_delivery',
+  statusLabel: 'saiu para entrega',
+  eta: 'hoje até às 18h',
+  confidence: 'high',
+  createdAt: createdAt(0),
+});
+
+// Pedido antigo (low confidence)
+const demoItems2: OrderItem[] = [{ name: 'Shampoo Hidratante 400ml', unit: 'und', qty: 1 }];
+
+orders.push({
+  id: 'ORD-DEMO-002',
+  customerId: demoCustomerId,
+  phoneNumber: DEMO_PHONE,
+  items: demoItems2,
+  itemSummary: buildItemSummary(demoItems2),
+  status: 'delivered',
+  statusLabel: 'entregue',
+  eta: 'já entregue',
+  confidence: 'low',
+  createdAt: createdAt(10),
+});
+
 // ── Escrita ───────────────────────────────────────────────────────────────────
 
 if (!fs.existsSync(DATA_DIR)) {
@@ -193,4 +247,8 @@ customers.slice(0, 3).forEach(c => {
   const latest = co[0];
   console.log(`   ${c.phoneNumber}  →  ${c.name}  |  último pedido: ${latest?.id} (${latest?.status})`);
 });
+
+console.log(`\nNúmero demo (seu WhatsApp):`);
+const demoLatest = orders.find(o => o.phoneNumber === DEMO_PHONE && o.id === 'ORD-DEMO-001');
+console.log(`   ${DEMO_PHONE}  →  Gustavo Demo  |  último pedido: ${demoLatest?.id} (${demoLatest?.status})`);
 console.log();
