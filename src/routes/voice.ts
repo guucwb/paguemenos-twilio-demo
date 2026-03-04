@@ -36,6 +36,7 @@ router.post('/voice/inbound', (req: Request, res: Response) => {
       ttsProvider="ElevenLabs"
       voice="mPDAoQyGzxBSkE0OAOKw-1.2_0.6_0.8"
       elevenlabsTextNormalization="true"
+      intelligenceService="GA70ab68b379d37a5b014326a4a402fb1b"
     />
   </Connect>
 </Response>`;
