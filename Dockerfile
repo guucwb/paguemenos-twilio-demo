@@ -20,13 +20,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY package.json ./
 
-# Cria diretório de dados persistente
+# Garante diretório de dados e copia os dados seedados para dentro do container
 RUN mkdir -p /app/data
+COPY data ./data
 
 EXPOSE 3000
 
-# Health check (Railway usa esse para saber se o container subiu)
+# Health check (mais robusto: respeita PORT do Railway)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+  CMD sh -c "wget -qO- http://localhost:${PORT:-3000}/health || exit 1"
 
 CMD ["node", "dist/index.js"]
