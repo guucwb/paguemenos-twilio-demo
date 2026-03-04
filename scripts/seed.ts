@@ -6,7 +6,9 @@
  * Produtos: itens neutros de higiene/beleza/cuidados pessoais (sem medicamentos).
  *
  * EXCEÇÃO (demo interna):
- * - Inclui UM cliente "Patrícia Demo" com o número +5541991039019 para você testar no seu WhatsApp.
+ * - Inclui DOIS clientes "demo" para testes ao vivo:
+ *   1) WhatsApp (sem 9º dígito): +554191039019
+ *   2) Voz/PSTN (com 9º dígito): +5541991039019
  * - Não inclui CPF real nem dados sensíveis (somente máscaras).
  */
 
@@ -180,54 +182,61 @@ for (let i = 0; i < 10; i++) {
   }
 }
 
-// ── Cliente fixo para demo (seu número) ───────────────────────────────────────
+// ── Clientes fixos para demo (WhatsApp e Voz/PSTN) ────────────────────────────
 // IMPORTANTE: uso apenas interno para facilitar testes ao vivo.
 // Sem CPF real, sem dados sensíveis.
-const DEMO_PHONE = '+5541991039019';
-const demoCustomerId = 'CUST-DEMO';
+const DEMO_PHONE_WA = '+554191039019';      // WhatsApp (sem 9º dígito)
+const DEMO_PHONE_PSTN = '+5541991039019';   // Voz/PSTN (com 9º dígito)
 
-customers.push({
-  id: demoCustomerId,
-  phoneNumber: DEMO_PHONE,
-  name: 'Gustavo Demo',
-  email: 'gustsantos@twilio.com',
-  cpf: '***.***.***-**',
-});
+function addDemoCustomerAndOrders(opts: { customerId: string; phone: string; orderPrefix: string }) {
+  const { customerId, phone, orderPrefix } = opts;
 
-// Pedido recente (ativo / high confidence)
-const demoItems1: OrderItem[] = [
-  { name: 'Fralda Descartável Tamanho M', unit: 'pct', qty: 1 },
-  { name: 'Lenços Umedecidos Baby', unit: 'pct', qty: 2 },
-];
+  customers.push({
+    id: customerId,
+    phoneNumber: phone,
+    name: 'Patrícia Demo',
+    email: `patricia.demo.${orderPrefix.toLowerCase()}@email.example`,
+    cpf: '***.***.***-**',
+  });
 
-orders.push({
-  id: 'ORD-DEMO-001',
-  customerId: demoCustomerId,
-  phoneNumber: DEMO_PHONE,
-  items: demoItems1,
-  itemSummary: buildItemSummary(demoItems1),
-  status: 'out_for_delivery',
-  statusLabel: 'saiu para entrega',
-  eta: 'hoje até às 18h',
-  confidence: 'high',
-  createdAt: createdAt(0),
-});
+  // Pedido recente (ativo / high confidence)
+  const items1: OrderItem[] = [
+    { name: 'Fralda Descartável Tamanho M', unit: 'pct', qty: 1 },
+    { name: 'Lenços Umedecidos Baby', unit: 'pct', qty: 2 },
+  ];
 
-// Pedido antigo (low confidence)
-const demoItems2: OrderItem[] = [{ name: 'Shampoo Hidratante 400ml', unit: 'und', qty: 1 }];
+  orders.push({
+    id: `${orderPrefix}-001`,
+    customerId,
+    phoneNumber: phone,
+    items: items1,
+    itemSummary: buildItemSummary(items1),
+    status: 'out_for_delivery',
+    statusLabel: 'saiu para entrega',
+    eta: 'hoje até às 18h',
+    confidence: 'high',
+    createdAt: createdAt(0),
+  });
 
-orders.push({
-  id: 'ORD-DEMO-002',
-  customerId: demoCustomerId,
-  phoneNumber: DEMO_PHONE,
-  items: demoItems2,
-  itemSummary: buildItemSummary(demoItems2),
-  status: 'delivered',
-  statusLabel: 'entregue',
-  eta: 'já entregue',
-  confidence: 'low',
-  createdAt: createdAt(10),
-});
+  // Pedido antigo (low confidence)
+  const items2: OrderItem[] = [{ name: 'Shampoo Hidratante 400ml', unit: 'und', qty: 1 }];
+
+  orders.push({
+    id: `${orderPrefix}-002`,
+    customerId,
+    phoneNumber: phone,
+    items: items2,
+    itemSummary: buildItemSummary(items2),
+    status: 'delivered',
+    statusLabel: 'entregue',
+    eta: 'já entregue',
+    confidence: 'low',
+    createdAt: createdAt(10),
+  });
+}
+
+addDemoCustomerAndOrders({ customerId: 'CUST-DEMO-WA', phone: DEMO_PHONE_WA, orderPrefix: 'ORD-DEMO-WA' });
+addDemoCustomerAndOrders({ customerId: 'CUST-DEMO-PSTN', phone: DEMO_PHONE_PSTN, orderPrefix: 'ORD-DEMO-PSTN' });
 
 // ── Escrita ───────────────────────────────────────────────────────────────────
 
@@ -248,7 +257,7 @@ customers.slice(0, 3).forEach(c => {
   console.log(`   ${c.phoneNumber}  →  ${c.name}  |  último pedido: ${latest?.id} (${latest?.status})`);
 });
 
-console.log(`\nNúmero demo (seu WhatsApp):`);
-const demoLatest = orders.find(o => o.phoneNumber === DEMO_PHONE && o.id === 'ORD-DEMO-001');
-console.log(`   ${DEMO_PHONE}  →  Gustavo Demo  |  último pedido: ${demoLatest?.id} (${demoLatest?.status})`);
+console.log(`\nNúmeros demo:`);
+console.log(`   WhatsApp (sem 9º): ${DEMO_PHONE_WA}  →  Patrícia Demo  |  último pedido: ORD-DEMO-WA-001`);
+console.log(`   Voz/PSTN (com 9º): ${DEMO_PHONE_PSTN}  →  Patrícia Demo  |  último pedido: ORD-DEMO-PSTN-001`);
 console.log();
