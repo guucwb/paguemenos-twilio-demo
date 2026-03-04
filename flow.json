@@ -1,1095 +1,1159 @@
 {
-  "description": "PagueMenos WhatsApp Text — Demo Enterprise",
-  "flags": {
-    "allow_concurrent_calls": true
-  },
-  "initial_state": "Trigger",
+  "description": "Pague Menos",
   "states": [
     {
       "name": "Trigger",
       "type": "trigger",
       "transitions": [
         {
-          "event": "incomingMessage",
-          "next": "send_welcome"
+          "next": "set_variable",
+          "event": "incomingMessage"
         },
         {
           "event": "incomingCall"
         },
         {
+          "next": "set_variable",
+          "event": "incomingConversationMessage"
+        },
+        {
           "event": "incomingRequest"
+        },
+        {
+          "event": "incomingParent"
         }
       ],
       "properties": {
-        "offset": { "x": 0, "y": 0 }
+        "offset": {
+          "x": -300,
+          "y": -130
+        }
       }
     },
-
     {
-      "name": "send_welcome",
-      "type": "send-message",
+      "name": "welcome_menu",
+      "type": "send-and-wait-for-reply",
       "transitions": [
         {
-          "event": "sent",
-          "next": "wait_menu"
+          "next": "split_menu",
+          "event": "incomingMessage"
+        },
+        {
+          "next": "send_timeout",
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
         }
       ],
       "properties": {
-        "offset": { "x": 0, "y": 150 },
+        "offset": {
+          "x": -550,
+          "y": 90
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Olá! Bem-vindo à *PagueMenos* 💊\n\nComo posso te ajudar?\n\n*1* — Status do meu pedido\n*2* — Repetir minha última compra\n*3* — Falar com atendente"
-      }
-    },
-
-    {
-      "name": "wait_menu",
-      "type": "wait-for-reply",
-      "transitions": [
-        {
-          "event": "incomingMessage",
-          "next": "split_menu"
-        },
-        {
-          "event": "timeout",
-          "next": "send_timeout"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 0, "y": 320 },
+        "message_type": "custom",
+        "body": "Olá! Bem-vindo à *PagueMenos* 💊\n\nComo posso te ajudar?\n\n*1* — Status do meu pedido\n*2* — Repetir minha última compra\n*3* — Falar com atendente",
         "timeout": "300"
       }
     },
-
     {
       "name": "split_menu",
       "type": "split-based-on",
       "transitions": [
         {
-          "event": "match",
-          "conditions": [
-            {
-              "friendly_name": "Opcao 1 - Status",
-              "arguments": ["{{widgets.wait_menu.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "1"
-            }
-          ],
-          "next": "send_auth_channel_prompt"
+          "next": "send_menu_invalid",
+          "event": "noMatch"
         },
         {
+          "next": "http_escalate_direct",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "Opcao 2 - Repetir",
-              "arguments": ["{{widgets.wait_menu.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "2"
+              "friendly_name": "option 3 digit",
+              "arguments": ["{{widgets.welcome_menu.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 3"
             }
-          ],
-          "next": "send_auth_channel_prompt"
+          ]
         },
         {
+          "next": "http_escalate_direct",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "Opcao 3 - Atendente",
-              "arguments": ["{{widgets.wait_menu.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "3"
-            }
-          ],
-          "next": "http_escalate_direct"
-        },
-        {
-          "event": "match",
-          "conditions": [
-            {
-              "friendly_name": "Humano por texto",
-              "arguments": ["{{widgets.wait_menu.inbound_message.Body}}"],
+              "friendly_name": "keyword atendente",
+              "arguments": ["{{widgets.welcome_menu.inbound.Body}}"],
               "type": "contains",
               "value": "atendente"
             }
-          ],
-          "next": "http_escalate_direct"
+          ]
         },
         {
-          "event": "noMatch",
-          "next": "send_menu_invalid"
+          "next": "http_escalate_direct",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword humano",
+              "arguments": ["{{widgets.welcome_menu.inbound.Body}}"],
+              "type": "contains",
+              "value": "humano"
+            }
+          ]
+        },
+        {
+          "next": "auth_channel_q",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "option 1 digit",
+              "arguments": ["{{widgets.welcome_menu.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 1"
+            }
+          ]
+        },
+        {
+          "next": "auth_channel_q",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "option 2 digit",
+              "arguments": ["{{widgets.welcome_menu.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 2"
+            }
+          ]
+        },
+        {
+          "next": "auth_channel_q",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword status",
+              "arguments": ["{{widgets.welcome_menu.inbound.Body}}"],
+              "type": "contains",
+              "value": "status"
+            }
+          ]
+        },
+        {
+          "next": "auth_channel_q",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword pedido",
+              "arguments": ["{{widgets.welcome_menu.inbound.Body}}"],
+              "type": "contains",
+              "value": "pedido"
+            }
+          ]
+        },
+        {
+          "next": "auth_channel_q",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword repetir",
+              "arguments": ["{{widgets.welcome_menu.inbound.Body}}"],
+              "type": "contains",
+              "value": "repetir"
+            }
+          ]
         }
       ],
       "properties": {
-        "offset": { "x": 0, "y": 490 },
-        "input": "{{widgets.wait_menu.inbound_message.Body}}"
+        "input": "{{widgets.welcome_menu.inbound.Body}}",
+        "offset": {
+          "x": -1220,
+          "y": 400
+        }
       }
     },
-
     {
       "name": "send_menu_invalid",
       "type": "send-message",
       "transitions": [
         {
-          "event": "sent",
-          "next": "wait_menu"
+          "next": "welcome_menu",
+          "event": "sent"
+        },
+        {
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 300, "y": 490 },
+        "offset": {
+          "x": 930,
+          "y": 160
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
+        "message_type": "custom",
         "to": "{{contact.channel.address}}",
         "body": "Opção inválida. Por favor, responda com *1*, *2* ou *3*."
       }
     },
-
     {
-      "name": "send_auth_channel_prompt",
-      "type": "send-message",
+      "name": "auth_channel_q",
+      "type": "send-and-wait-for-reply",
       "transitions": [
         {
-          "event": "sent",
-          "next": "wait_auth_channel"
+          "next": "split_auth_channel",
+          "event": "incomingMessage"
+        },
+        {
+          "next": "send_timeout",
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
         }
       ],
       "properties": {
-        "offset": { "x": -200, "y": 680 },
+        "offset": {
+          "x": -300,
+          "y": 660
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Antes de acessar seus pedidos, precisamos validar sua identidade rapidinho 🔐\n\nComo prefere receber o código?\n\n*1* — WhatsApp\n*2* — SMS"
-      }
-    },
-
-    {
-      "name": "wait_auth_channel",
-      "type": "wait-for-reply",
-      "transitions": [
-        {
-          "event": "incomingMessage",
-          "next": "split_auth_channel"
-        },
-        {
-          "event": "timeout",
-          "next": "send_timeout"
-        }
-      ],
-      "properties": {
-        "offset": { "x": -200, "y": 850 },
+        "message_type": "custom",
+        "body": "Antes de acessar seus pedidos, precisamos validar sua identidade rapidinho 🔐\n\nComo prefere receber o código de verificação?\n\n*1* — WhatsApp\n*2* — SMS",
         "timeout": "120"
       }
     },
-
     {
       "name": "split_auth_channel",
       "type": "split-based-on",
       "transitions": [
         {
+          "next": "send_auth_channel_invalid",
+          "event": "noMatch"
+        },
+        {
+          "next": "http_start_auth_wa",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "WhatsApp",
-              "arguments": ["{{widgets.wait_auth_channel.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "1"
+              "friendly_name": "option 1 digit",
+              "arguments": ["{{widgets.auth_channel_q.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 1"
             }
-          ],
-          "next": "http_start_auth_whatsapp"
+          ]
         },
         {
+          "next": "http_start_auth_wa",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "SMS",
-              "arguments": ["{{widgets.wait_auth_channel.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "2"
+              "friendly_name": "keyword whatsapp",
+              "arguments": ["{{widgets.auth_channel_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "whatsapp"
             }
-          ],
-          "next": "http_start_auth_sms"
+          ]
         },
         {
-          "event": "noMatch",
-          "next": "send_auth_channel_invalid"
+          "next": "http_start_auth_wa",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword zap",
+              "arguments": ["{{widgets.auth_channel_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "zap"
+            }
+          ]
+        },
+        {
+          "next": "http_start_auth_sms",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "option 2 digit",
+              "arguments": ["{{widgets.auth_channel_q.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 2"
+            }
+          ]
+        },
+        {
+          "next": "http_start_auth_sms",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword sms",
+              "arguments": ["{{widgets.auth_channel_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "sms"
+            }
+          ]
+        },
+        {
+          "next": "http_start_auth_sms",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword torpedo",
+              "arguments": ["{{widgets.auth_channel_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "torpedo"
+            }
+          ]
         }
       ],
       "properties": {
-        "offset": { "x": -200, "y": 1020 },
-        "input": "{{widgets.wait_auth_channel.inbound_message.Body}}"
+        "input": "{{widgets.auth_channel_q.inbound.Body}}",
+        "offset": {
+          "x": -300,
+          "y": 900
+        }
       }
     },
-
     {
       "name": "send_auth_channel_invalid",
       "type": "send-message",
       "transitions": [
         {
-          "event": "sent",
-          "next": "wait_auth_channel"
+          "next": "auth_channel_q",
+          "event": "sent"
+        },
+        {
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 150, "y": 1020 },
+        "offset": {
+          "x": 650,
+          "y": 1180
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
+        "message_type": "custom",
         "to": "{{contact.channel.address}}",
         "body": "Responda *1* para WhatsApp ou *2* para SMS."
       }
     },
-
     {
-      "name": "http_start_auth_whatsapp",
+      "name": "http_start_auth_wa",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "send_code_prompt"
+          "next": "ask_code",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "send_auth_error"
+          "next": "send_auth_start_error",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": -400, "y": 1200 },
+        "offset": {
+          "x": -500,
+          "y": 1120
+        },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/api/auth/start",
-        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"channel\":\"whatsapp\"}",
         "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"channel\":\"whatsapp\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/api/auth/start"
       }
     },
-
     {
       "name": "http_start_auth_sms",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "send_code_prompt"
+          "next": "ask_code",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "send_auth_error"
+          "next": "send_auth_start_error",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": -100, "y": 1200 },
+        "offset": {
+          "x": -130,
+          "y": 1230
+        },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/api/auth/start",
+        "content_type": "application/json;charset=utf-8",
+        "add_twilio_auth": false,
         "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"channel\":\"sms\"}",
-        "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "url": "{{flow.variables.BACKEND_URL}}/api/auth/start"
       }
     },
-
     {
-      "name": "send_auth_error",
+      "name": "send_auth_start_error",
       "type": "send-message",
       "transitions": [
         {
-          "event": "sent",
-          "next": "http_escalate_auth_failed"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 200, "y": 1200 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Tivemos um problema ao enviar o código de verificação 😕\nVou te conectar com um atendente agora."
-      }
-    },
-
-    {
-      "name": "send_code_prompt",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "wait_code_attempt1"
-        }
-      ],
-      "properties": {
-        "offset": { "x": -250, "y": 1380 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Ok! Enviamos o código agora 📩\n\nPor favor, me diga o código de *6 dígitos*:"
-      }
-    },
-
-    {
-      "name": "wait_code_attempt1",
-      "type": "wait-for-reply",
-      "transitions": [
-        {
-          "event": "incomingMessage",
-          "next": "http_check_auth_1"
+          "next": "http_escalate_direct",
+          "event": "sent"
         },
         {
-          "event": "timeout",
-          "next": "send_timeout"
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": -250, "y": 1550 },
+        "offset": {
+          "x": 200,
+          "y": 1120
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "message_type": "custom",
+        "to": "{{contact.channel.address}}",
+        "body": "Tivemos um problema ao enviar o código de verificação 😕\nVou te conectar com um atendente."
+      }
+    },
+    {
+      "name": "ask_code",
+      "type": "send-and-wait-for-reply",
+      "transitions": [
+        {
+          "next": "http_check_1",
+          "event": "incomingMessage"
+        },
+        {
+          "next": "send_timeout",
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": -350,
+          "y": 1340
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "message_type": "custom",
+        "body": "Ok! Enviamos o código agora 📩\n\nPor favor, me diga o código de *6 dígitos*:",
         "timeout": "180"
       }
     },
-
     {
-      "name": "http_check_auth_1",
+      "name": "http_check_1",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "split_auth_result_1"
+          "next": "split_auth_1",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "send_auth_check_error"
+          "next": "http_escalate_direct",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": -250, "y": 1720 },
+        "offset": {
+          "x": -350,
+          "y": 1560
+        },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/api/auth/check",
-        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"code\":\"{{widgets.wait_code_attempt1.inbound_message.Body}}\"}",
         "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"code\":\"{{widgets.ask_code.inbound.Body}}\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/api/auth/check"
       }
     },
-
     {
-      "name": "split_auth_result_1",
+      "name": "split_auth_1",
       "type": "split-based-on",
       "transitions": [
         {
+          "next": "ask_code_retry",
+          "event": "noMatch"
+        },
+        {
+          "next": "http_get_order",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "Aprovado",
-              "arguments": ["{{widgets.http_check_auth_1.parsed_body.approved}}"],
+              "friendly_name": "If approved equal_to true",
+              "arguments": [
+                "{{widgets.http_check_1.parsed_body.approved}}"
+              ],
               "type": "equal_to",
               "value": "true"
             }
-          ],
-          "next": "http_get_last_order"
-        },
-        {
-          "event": "noMatch",
-          "next": "send_code_wrong_retry"
+          ]
         }
       ],
       "properties": {
-        "offset": { "x": -250, "y": 1890 },
-        "input": "{{widgets.http_check_auth_1.parsed_body.approved}}"
+        "input": "{{widgets.http_check_1.parsed_body.approved}}",
+        "offset": {
+          "x": -350,
+          "y": 1780
+        }
       }
     },
-
     {
-      "name": "send_code_wrong_retry",
-      "type": "send-message",
+      "name": "ask_code_retry",
+      "type": "send-and-wait-for-reply",
       "transitions": [
         {
-          "event": "sent",
-          "next": "wait_code_attempt2"
+          "next": "http_check_2",
+          "event": "incomingMessage"
+        },
+        {
+          "next": "send_timeout",
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
         }
       ],
       "properties": {
-        "offset": { "x": 100, "y": 1890 },
+        "offset": {
+          "x": 100,
+          "y": 1780
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Código incorreto ❌ Você tem mais uma tentativa.\n\nDigite novamente o código de *6 dígitos*:"
-      }
-    },
-
-    {
-      "name": "wait_code_attempt2",
-      "type": "wait-for-reply",
-      "transitions": [
-        {
-          "event": "incomingMessage",
-          "next": "http_check_auth_2"
-        },
-        {
-          "event": "timeout",
-          "next": "send_timeout"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 100, "y": 2060 },
+        "message_type": "custom",
+        "body": "Código incorreto ❌ Você tem mais uma tentativa.\n\nDigite novamente o código de *6 dígitos*:",
         "timeout": "180"
       }
     },
-
     {
-      "name": "http_check_auth_2",
+      "name": "http_check_2",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "split_auth_result_2"
+          "next": "split_auth_2",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "send_auth_check_error"
+          "next": "http_escalate_direct",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 100, "y": 2230 },
+        "offset": {
+          "x": 710,
+          "y": 2060
+        },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/api/auth/check",
-        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"code\":\"{{widgets.wait_code_attempt2.inbound_message.Body}}\"}",
         "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"code\":\"{{widgets.ask_code_retry.inbound.Body}}\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/api/auth/check"
       }
     },
-
     {
-      "name": "split_auth_result_2",
+      "name": "split_auth_2",
       "type": "split-based-on",
       "transitions": [
         {
+          "next": "http_escalate_auth_failed",
+          "event": "noMatch"
+        },
+        {
+          "next": "http_get_order",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "Aprovado",
-              "arguments": ["{{widgets.http_check_auth_2.parsed_body.approved}}"],
+              "friendly_name": "If approved equal_to true",
+              "arguments": [
+                "{{widgets.http_check_2.parsed_body.approved}}"
+              ],
               "type": "equal_to",
               "value": "true"
             }
-          ],
-          "next": "http_get_last_order"
-        },
-        {
-          "event": "noMatch",
-          "next": "http_escalate_auth_failed"
+          ]
         }
       ],
       "properties": {
-        "offset": { "x": 100, "y": 2400 },
-        "input": "{{widgets.http_check_auth_2.parsed_body.approved}}"
-      }
-    },
-
-    {
-      "name": "send_auth_check_error",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "http_escalate_auth_failed"
+        "input": "{{widgets.http_check_2.parsed_body.approved}}",
+        "offset": {
+          "x": 100,
+          "y": 2220
         }
-      ],
-      "properties": {
-        "offset": { "x": 400, "y": 2230 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Houve um problema ao verificar seu código. Vou te passar para um atendente."
       }
     },
-
     {
       "name": "http_escalate_auth_failed",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "send_escalated_auth_failed"
+          "next": "send_esc_auth_failed",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "send_escalated_auth_failed"
+          "next": "send_esc_auth_failed",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 100, "y": 2600 },
+        "offset": {
+          "x": 100,
+          "y": 2440
+        },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/api/flex/escalate",
-        "body": "{\"channel\":\"whatsapp_text\",\"phoneNumber\":\"{{contact.channel.address}}\",\"authStatus\":\"failed\",\"authChannel\":\"whatsapp\",\"authAttempts\":2,\"handoffReason\":\"auth_failed\"}",
         "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "body": "{\"channel\":\"whatsapp_text\",\"phoneNumber\":\"{{contact.channel.address}}\",\"authStatus\":\"failed\",\"authChannel\":\"whatsapp\",\"authAttempts\":2,\"handoffReason\":\"auth_failed\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/api/flex/escalate"
       }
     },
-
     {
-      "name": "send_escalated_auth_failed",
+      "name": "send_esc_auth_failed",
       "type": "send-message",
       "transitions": [
         {
           "event": "sent"
+        },
+        {
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 100, "y": 2780 },
+        "offset": {
+          "x": 100,
+          "y": 2660
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
+        "message_type": "custom",
         "to": "{{contact.channel.address}}",
-        "body": "Não conseguimos validar sua identidade 🔒\n\nPor segurança, conectei você com um atendente. Eles entrarão em contato em breve.\n\n_Número de protocolo: {{widgets.http_escalate_auth_failed.parsed_body.taskSid}}_"
+        "body": "Não conseguimos validar sua identidade 🔒\n\nPor segurança, um atendente entrará em contato em breve.\n\n_Protocolo: {{widgets.http_escalate_auth_failed.parsed_body.taskSid}}_"
       }
     },
-
     {
-      "name": "http_get_last_order",
+      "name": "http_get_order",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "split_order_found"
+          "next": "order_issue_q",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "send_order_error"
+          "next": "http_escalate_no_order",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": -250, "y": 2600 },
+        "offset": {
+          "x": -350,
+          "y": 2440
+        },
         "method": "GET",
-        "url": "{{flow.variables.BACKEND_URL}}/studio/order-message?phone={{contact.channel.address}}",
-        "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "url": "{{flow.variables.BACKEND_URL}}/api/orders/last?phone={{contact.channel.address}}"
       }
     },
-
     {
-      "name": "split_order_found",
-      "type": "split-based-on",
+      "name": "order_issue_q",
+      "type": "send-and-wait-for-reply",
       "transitions": [
         {
-          "event": "match",
-          "conditions": [
-            {
-              "friendly_name": "Pedido encontrado",
-              "arguments": ["{{widgets.http_get_last_order.parsed_body.found}}"],
-              "type": "equal_to",
-              "value": "true"
-            }
-          ],
-          "next": "send_order_info"
+          "next": "split_issue",
+          "event": "incomingMessage"
         },
         {
-          "event": "noMatch",
-          "next": "send_no_order"
-        }
-      ],
-      "properties": {
-        "offset": { "x": -250, "y": 2780 },
-        "input": "{{widgets.http_get_last_order.parsed_body.found}}"
-      }
-    },
-
-    {
-      "name": "send_no_order",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "http_escalate_direct"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 100, "y": 2780 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "{{widgets.http_get_last_order.parsed_body.message}}"
-      }
-    },
-
-    {
-      "name": "send_order_error",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "http_escalate_direct"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 400, "y": 2600 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Não consegui acessar seus pedidos agora 😕 Vou te passar para um atendente."
-      }
-    },
-
-    {
-      "name": "send_order_info",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "wait_order_choice"
-        }
-      ],
-      "properties": {
-        "offset": { "x": -250, "y": 2960 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "{{widgets.http_get_last_order.parsed_body.message}}"
-      }
-    },
-
-    {
-      "name": "wait_order_choice",
-      "type": "wait-for-reply",
-      "transitions": [
-        {
-          "event": "incomingMessage",
-          "next": "split_order_choice"
+          "next": "send_timeout",
+          "event": "timeout"
         },
         {
-          "event": "timeout",
-          "next": "send_timeout"
+          "event": "deliveryFailure"
         }
       ],
       "properties": {
-        "offset": { "x": -250, "y": 3130 },
+        "offset": {
+          "x": -350,
+          "y": 2660
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "message_type": "custom",
+        "body": "Validado ✅ Encontrei seu pedido recente:\n\n📦 *Pedido #{{widgets.http_get_order.parsed_body.orderId}}*\n🛍️ {{widgets.http_get_order.parsed_body.itemSummary}}\n📊 Status: {{widgets.http_get_order.parsed_body.statusLabel}}\n🕐 Previsão: {{widgets.http_get_order.parsed_body.eta}}\n\nQual é o problema com esse pedido?\n\n*1* — Atraso na entrega\n*2* — Item faltando ou incorreto\n*3* — Questão de cobrança\n*4* — Outro / Falar com atendente",
         "timeout": "300"
       }
     },
-
-    {
-      "name": "split_order_choice",
-      "type": "split-based-on",
-      "transitions": [
-        {
-          "event": "match",
-          "conditions": [
-            {
-              "friendly_name": "Este pedido",
-              "arguments": ["{{widgets.wait_order_choice.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "1"
-            }
-          ],
-          "next": "send_issue_menu"
-        },
-        {
-          "event": "match",
-          "conditions": [
-            {
-              "friendly_name": "Outro pedido",
-              "arguments": ["{{widgets.wait_order_choice.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "2"
-            }
-          ],
-          "next": "send_ask_order_id"
-        },
-        {
-          "event": "noMatch",
-          "next": "send_order_choice_invalid"
-        }
-      ],
-      "properties": {
-        "offset": { "x": -250, "y": 3300 },
-        "input": "{{widgets.wait_order_choice.inbound_message.Body}}"
-      }
-    },
-
-    {
-      "name": "send_order_choice_invalid",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "wait_order_choice"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 100, "y": 3300 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Responda *1* para esse pedido ou *2* para consultar outro."
-      }
-    },
-
-    {
-      "name": "send_ask_order_id",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "wait_order_id"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 200, "y": 3490 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Ok! Qual é o número do pedido? (Ex: *ORD-001*)"
-      }
-    },
-
-    {
-      "name": "wait_order_id",
-      "type": "wait-for-reply",
-      "transitions": [
-        {
-          "event": "incomingMessage",
-          "next": "http_get_order_by_id"
-        },
-        {
-          "event": "timeout",
-          "next": "send_timeout"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 200, "y": 3660 },
-        "timeout": "120"
-      }
-    },
-
-    {
-      "name": "http_get_order_by_id",
-      "type": "make-http-request",
-      "transitions": [
-        {
-          "event": "success",
-          "next": "send_order_by_id"
-        },
-        {
-          "event": "failed",
-          "next": "send_order_error"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 200, "y": 3830 },
-        "method": "GET",
-        "url": "{{flow.variables.BACKEND_URL}}/studio/order-by-id?phone={{contact.channel.address}}&order={{widgets.wait_order_id.inbound_message.Body}}",
-        "content_type": "application/json;charset=utf-8",
-        "parameters": []
-      }
-    },
-
-    {
-      "name": "send_order_by_id",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "send_issue_menu"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 200, "y": 4000 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "{{widgets.http_get_order_by_id.parsed_body.message}}"
-      }
-    },
-
-    {
-      "name": "send_issue_menu",
-      "type": "send-message",
-      "transitions": [
-        {
-          "event": "sent",
-          "next": "wait_issue"
-        }
-      ],
-      "properties": {
-        "offset": { "x": -250, "y": 3490 },
-        "service": "{{trigger.message.InstanceSid}}",
-        "channel": "{{trigger.message.ChannelSid}}",
-        "from": "{{flow.channel.address}}",
-        "to": "{{contact.channel.address}}",
-        "body": "Qual é o problema com o pedido?\n\n*1* — Atraso na entrega\n*2* — Item faltando ou incorreto\n*3* — Questão de cobrança\n*4* — Outro / Falar com atendente"
-      }
-    },
-
-    {
-      "name": "wait_issue",
-      "type": "wait-for-reply",
-      "transitions": [
-        {
-          "event": "incomingMessage",
-          "next": "split_issue"
-        },
-        {
-          "event": "timeout",
-          "next": "send_timeout"
-        }
-      ],
-      "properties": {
-        "offset": { "x": -250, "y": 3660 },
-        "timeout": "300"
-      }
-    },
-
     {
       "name": "split_issue",
       "type": "split-based-on",
       "transitions": [
         {
+          "next": "http_escalate_direct",
+          "event": "noMatch"
+        },
+        {
+          "next": "http_escalate_billing",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "Atraso",
-              "arguments": ["{{widgets.wait_issue.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "1"
+              "friendly_name": "option 3 digit",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 3"
             }
-          ],
-          "next": "http_resolve_delay"
+          ]
         },
         {
+          "next": "http_escalate_billing",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "Item faltando",
-              "arguments": ["{{widgets.wait_issue.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "2"
+              "friendly_name": "keyword cobran",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "cobran"
             }
-          ],
-          "next": "http_resolve_missing"
+          ]
         },
         {
+          "next": "http_escalate_billing",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "Cobranca",
-              "arguments": ["{{widgets.wait_issue.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "3"
+              "friendly_name": "keyword financeiro",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "financeiro"
             }
-          ],
-          "next": "http_escalate_billing"
+          ]
         },
         {
+          "next": "http_escalate_billing",
           "event": "match",
           "conditions": [
             {
-              "friendly_name": "Outro ou atendente",
-              "arguments": ["{{widgets.wait_issue.inbound_message.Body}}"],
-              "type": "equal_to",
-              "value": "4"
+              "friendly_name": "keyword pagamento",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "pagamento"
             }
-          ],
-          "next": "http_escalate_direct"
+          ]
         },
         {
-          "event": "noMatch",
-          "next": "http_resolve_generic"
+          "next": "http_escalate_direct",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "option 4 digit",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 4"
+            }
+          ]
+        },
+        {
+          "next": "http_escalate_direct",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword atendente",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "atendente"
+            }
+          ]
+        },
+        {
+          "next": "http_escalate_direct",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword humano",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "humano"
+            }
+          ]
+        },
+        {
+          "next": "http_resolve_delay",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "option 1 digit",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 1"
+            }
+          ]
+        },
+        {
+          "next": "http_resolve_delay",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword atraso",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "atraso"
+            }
+          ]
+        },
+        {
+          "next": "http_resolve_delay",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword demor",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "demor"
+            }
+          ]
+        },
+        {
+          "next": "http_resolve_missing",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "option 2 digit",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": ": 2"
+            }
+          ]
+        },
+        {
+          "next": "http_resolve_missing",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword faltando",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "faltando"
+            }
+          ]
+        },
+        {
+          "next": "http_resolve_missing",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "keyword errado",
+              "arguments": ["{{widgets.order_issue_q.inbound.Body}}"],
+              "type": "contains",
+              "value": "errado"
+            }
+          ]
         }
       ],
       "properties": {
-        "offset": { "x": -250, "y": 3830 },
-        "input": "{{widgets.wait_issue.inbound_message.Body}}"
+        "input": "{{widgets.order_issue_q.inbound.Body}}",
+        "offset": {
+          "x": -350,
+          "y": 2900
+        }
       }
     },
-
     {
       "name": "http_resolve_delay",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "send_resolve_result"
+          "next": "send_resolved_delay",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "http_escalate_direct"
+          "next": "http_escalate_direct",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": -500, "y": 4020 },
+        "offset": {
+          "x": -700,
+          "y": 3120
+        },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/studio/resolve",
-        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"issueType\":\"delay\",\"orderId\":\"{{widgets.http_get_last_order.parsed_body.orderId}}\"}",
         "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"issueType\":\"delay\",\"orderId\":\"{{widgets.http_get_order.parsed_body.orderId}}\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/studio/resolve"
       }
     },
-
+    {
+      "name": "send_resolved_delay",
+      "type": "send-message",
+      "transitions": [
+        {
+          "event": "sent"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": -700,
+          "y": 3340
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "message_type": "custom",
+        "to": "{{contact.channel.address}}",
+        "body": "✅ {{widgets.http_resolve_delay.parsed_body.message}}\n\nPosso ajudar com mais alguma coisa? Envie qualquer mensagem para reiniciar."
+      }
+    },
     {
       "name": "http_resolve_missing",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "send_resolve_result"
+          "next": "send_resolved_missing",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "http_escalate_direct"
+          "next": "http_escalate_direct",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": -250, "y": 4020 },
-        "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/studio/resolve",
-        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"issueType\":\"missing_item\",\"orderId\":\"{{widgets.http_get_last_order.parsed_body.orderId}}\"}",
-        "content_type": "application/json;charset=utf-8",
-        "parameters": []
-      }
-    },
-
-    {
-      "name": "http_resolve_generic",
-      "type": "make-http-request",
-      "transitions": [
-        {
-          "event": "success",
-          "next": "send_resolve_result"
+        "offset": {
+          "x": -350,
+          "y": 3120
         },
-        {
-          "event": "failed",
-          "next": "http_escalate_direct"
-        }
-      ],
-      "properties": {
-        "offset": { "x": 0, "y": 4020 },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/studio/resolve",
-        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"issueType\":\"other\",\"rawText\":\"{{widgets.wait_issue.inbound_message.Body}}\"}",
         "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "body": "{\"phoneNumber\":\"{{contact.channel.address}}\",\"issueType\":\"missing_item\",\"orderId\":\"{{widgets.http_get_order.parsed_body.orderId}}\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/studio/resolve"
       }
     },
-
     {
-      "name": "send_resolve_result",
+      "name": "send_resolved_missing",
       "type": "send-message",
       "transitions": [
         {
           "event": "sent"
+        },
+        {
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": -250, "y": 4200 },
+        "offset": {
+          "x": -350,
+          "y": 3340
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
+        "message_type": "custom",
         "to": "{{contact.channel.address}}",
-        "body": "✅ {{widgets.http_resolve_delay.parsed_body.message}}{{widgets.http_resolve_missing.parsed_body.message}}{{widgets.http_resolve_generic.parsed_body.message}}\n\nPosso ajudar com mais alguma coisa? Responda com *menu* para voltar ao início."
+        "body": "✅ {{widgets.http_resolve_missing.parsed_body.message}}\n\nPosso ajudar com mais alguma coisa? Envie qualquer mensagem para reiniciar."
       }
     },
-
     {
       "name": "http_escalate_billing",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "send_escalated_billing"
+          "next": "send_esc_billing",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "send_escalated_billing"
+          "next": "send_esc_billing",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 250, "y": 4020 },
+        "offset": {
+          "x": 0,
+          "y": 3120
+        },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/api/flex/escalate",
-        "body": "{\"channel\":\"whatsapp_text\",\"phoneNumber\":\"{{contact.channel.address}}\",\"authStatus\":\"approved\",\"authChannel\":\"whatsapp\",\"authAttempts\":1,\"issueType\":\"billing\",\"handoffReason\":\"billing_issue\"}",
         "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "body": "{\"channel\":\"whatsapp_text\",\"phoneNumber\":\"{{contact.channel.address}}\",\"authStatus\":\"approved\",\"authChannel\":\"whatsapp\",\"authAttempts\":1,\"issueType\":\"billing\",\"handoffReason\":\"billing_issue\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/api/flex/escalate"
       }
     },
-
     {
-      "name": "send_escalated_billing",
+      "name": "send_esc_billing",
       "type": "send-message",
       "transitions": [
         {
           "event": "sent"
+        },
+        {
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 250, "y": 4200 },
+        "offset": {
+          "x": 0,
+          "y": 3340
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
+        "message_type": "custom",
         "to": "{{contact.channel.address}}",
-        "body": "Questões de cobrança são tratadas pela nossa equipe financeira especializada 💳\n\nUm atendente entrará em contato em breve com todas as informações do seu caso.\n\n_Protocolo: {{widgets.http_escalate_billing.parsed_body.taskSid}}_"
+        "body": "Questões de cobrança são tratadas pela nossa equipe financeira 💳\n\nUm atendente entrará em contato em breve com todas as informações do seu caso.\n\n_Protocolo: {{widgets.http_escalate_billing.parsed_body.taskSid}}_"
       }
     },
-
+    {
+      "name": "http_escalate_no_order",
+      "type": "make-http-request",
+      "transitions": [
+        {
+          "next": "send_esc_no_order",
+          "event": "success"
+        },
+        {
+          "next": "send_esc_no_order",
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 680,
+          "y": 2670
+        },
+        "method": "POST",
+        "content_type": "application/json;charset=utf-8",
+        "add_twilio_auth": false,
+        "body": "{\"channel\":\"whatsapp_text\",\"phoneNumber\":\"{{contact.channel.address}}\",\"authStatus\":\"approved\",\"authChannel\":\"whatsapp\",\"authAttempts\":1,\"handoffReason\":\"no_order_found\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/api/flex/escalate"
+      }
+    },
+    {
+      "name": "send_esc_no_order",
+      "type": "send-message",
+      "transitions": [
+        {
+          "event": "sent"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 970,
+          "y": 2920
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "message_type": "custom",
+        "to": "{{contact.channel.address}}",
+        "body": "Não encontrei pedidos recentes associados a este número 🔍\n\nUm atendente entrará em contato em breve para ajudar.\n\n_Protocolo: {{widgets.http_escalate_no_order.parsed_body.taskSid}}_"
+      }
+    },
     {
       "name": "http_escalate_direct",
       "type": "make-http-request",
       "transitions": [
         {
-          "event": "success",
-          "next": "send_escalated_direct"
+          "next": "send_esc_direct",
+          "event": "success"
         },
         {
-          "event": "failed",
-          "next": "send_escalated_direct"
+          "next": "send_esc_direct",
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 500, "y": 680 },
+        "offset": {
+          "x": 550,
+          "y": 660
+        },
         "method": "POST",
-        "url": "{{flow.variables.BACKEND_URL}}/api/flex/escalate",
-        "body": "{\"channel\":\"whatsapp_text\",\"phoneNumber\":\"{{contact.channel.address}}\",\"authStatus\":\"pending\",\"authChannel\":\"whatsapp\",\"authAttempts\":0,\"handoffReason\":\"user_request\"}",
         "content_type": "application/json;charset=utf-8",
-        "parameters": []
+        "add_twilio_auth": false,
+        "body": "{\"channel\":\"whatsapp_text\",\"phoneNumber\":\"{{contact.channel.address}}\",\"authStatus\":\"pending\",\"authChannel\":\"whatsapp\",\"authAttempts\":0,\"handoffReason\":\"user_request\"}",
+        "url": "{{flow.variables.BACKEND_URL}}/api/flex/escalate"
       }
     },
-
     {
-      "name": "send_escalated_direct",
+      "name": "send_esc_direct",
       "type": "send-message",
       "transitions": [
         {
           "event": "sent"
+        },
+        {
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 500, "y": 850 },
+        "offset": {
+          "x": 550,
+          "y": 880
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
+        "message_type": "custom",
         "to": "{{contact.channel.address}}",
         "body": "Ok! Conectando você com um atendente agora 👤\n\nUm instante, por favor. Em breve alguém da nossa equipe entrará em contato.\n\n_Protocolo: {{widgets.http_escalate_direct.parsed_body.taskSid}}_"
       }
     },
-
     {
       "name": "send_timeout",
       "type": "send-message",
       "transitions": [
         {
           "event": "sent"
+        },
+        {
+          "event": "failed"
         }
       ],
       "properties": {
-        "offset": { "x": 700, "y": 320 },
+        "offset": {
+          "x": 1300,
+          "y": 1330
+        },
         "service": "{{trigger.message.InstanceSid}}",
         "channel": "{{trigger.message.ChannelSid}}",
         "from": "{{flow.channel.address}}",
+        "message_type": "custom",
         "to": "{{contact.channel.address}}",
-        "body": "Parece que nos perdemos no meio da conversa 😅\n\nEnvie qualquer mensagem para recomeçar, ou *3* para falar com um atendente."
+        "body": "Parece que nos perdemos no meio da conversa 😅\n\nEnvie qualquer mensagem para recomeçar ou *3* para falar com um atendente."
+      }
+    },
+    {
+      "name": "set_variable",
+      "type": "set-variables",
+      "transitions": [
+        {
+          "next": "welcome_menu",
+          "event": "next"
+        }
+      ],
+      "properties": {
+        "variables": [
+          {
+            "type": "string",
+            "value": "https://paguemenos-twilio-demo-production.up.railway.app",
+            "key": "BACKEND_URL"
+          }
+        ],
+        "offset": {
+          "x": -1060,
+          "y": -120
+        }
       }
     }
-  ]
+  ],
+  "initial_state": "Trigger",
+  "flags": {
+    "allow_concurrent_calls": true
+  }
 }
