@@ -42,7 +42,6 @@ interface PromptEvent {
 
 interface DtmfEvent {
   type: 'dtmf';
-  // Pode vir como "digit" (singular) ou "digits" (plural) dependendo da versão
   digit?: string;
   digits?: string;
 }
@@ -61,18 +60,15 @@ function send(ws: WebSocket, payload: Record<string, unknown>): void {
   }
 }
 
-/** Envia texto para TTS */
 function speak(ws: WebSocket, text: string): void {
   // Mantém o formato que já funcionou no seu ambiente
   send(ws, { type: 'text', token: text, last: true });
 }
 
-/** Encerra a chamada via WebSocket */
 function endCall(ws: WebSocket): void {
   send(ws, { type: 'end' });
 }
 
-/** Detecta se o input é um número de canal válido (whatsapp=1, sms=2) */
 function parseChannelChoice(input: string): 'whatsapp' | 'sms' | null {
   const clean = input.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (clean === '1' || clean.includes('whatsapp') || clean.includes('zap')) return 'whatsapp';
@@ -80,7 +76,6 @@ function parseChannelChoice(input: string): 'whatsapp' | 'sms' | null {
   return null;
 }
 
-/** Detecta escolha 1 ou 2 */
 function parseChoice12(input: string): '1' | '2' | null {
   const cleanDigits = input.trim().replace(/\D/g, '');
   if (cleanDigits === '1') return '1';
@@ -91,7 +86,8 @@ function parseChoice12(input: string): '1' | '2' | null {
   return null;
 }
 
-/** Chama REST API Twilio para redirecionar chamada para Flex */
+// ── Flex redirect (voz) ───────────────────────────────────────────────────────
+
 async function redirectCallToFlex(callSid: string, session: VoiceSession): Promise<void> {
   const workflowSid = config.twilio.flexWorkflowSid;
   const wsid = config.twilio.flexWorkspaceSid;
@@ -142,7 +138,8 @@ async function redirectCallToFlex(callSid: string, session: VoiceSession): Promi
   }
 }
 
-/** Chama /api/auth/start via HTTP interno */
+// ── Verify endpoints (interno) ────────────────────────────────────────────────
+
 async function callAuthStart(phoneNumber: string, channel: 'whatsapp' | 'sms'): Promise<{ status: string }> {
   const baseUrl = config.baseUrl;
   const resp = await fetch(`${baseUrl}/api/auth/start`, {
@@ -154,7 +151,6 @@ async function callAuthStart(phoneNumber: string, channel: 'whatsapp' | 'sms'): 
   return resp.json() as Promise<{ status: string }>;
 }
 
-/** Chama /api/auth/check via HTTP interno */
 async function callAuthCheck(phoneNumber: string, code: string): Promise<{ approved: boolean }> {
   const baseUrl = config.baseUrl;
   const resp = await fetch(`${baseUrl}/api/auth/check`, {
@@ -172,7 +168,7 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
   const callSid = session.callSid;
   const phone = session.phoneNumber;
 
-  // ── Detectores globais ────────────────────────────────────────────────────
+  // Detectores globais
   if (detectHumanRequest(input) && !['ESCALATING', 'DONE'].includes(session.state)) {
     await doEscalate(ws, callSid, 'user_request');
     return;
@@ -184,11 +180,10 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
     return;
   }
 
-  // IA FAQ (somente antes de autenticar e antes de iniciar o fluxo de OTP)
+  // IA FAQ: só em GREETING (pra não roubar fluxo de OTP)
   if (session.authStatus !== 'approved' && session.state === 'GREETING') {
     const txt = String(input ?? '').trim();
 
-    // Não deixa IA interferir em inputs de menu/atalhos numéricos
     const looksLikeMenuChoice = /^[1234]$/.test(txt);
     const looksLikeOtp = /^\d{6}$/.test(txt);
 
@@ -208,6 +203,34 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
   }
 
   switch (session.state) {
+    case 'GREETING': {
+      const txt = String(input ?? '').toLowerCase();
+
+      const wantsOrder =
+        txt.includes('pedido') ||
+        txt.includes('status') ||
+        txt.includes('meu pedido') ||
+        txt.includes('rastre') ||
+        txt.includes('último pedido') ||
+        txt.includes('ultimo pedido') ||
+        txt.includes('compra');
+
+      if (wantsOrder) {
+        speak(
+          ws,
+          'Certo. Para acessar informações do seu pedido, preciso validar sua identidade. Quer receber o código por WhatsApp ou por SMS?',
+        );
+        updateSession(callSid, { state: 'CHOOSING_AUTH_CHANNEL' });
+        return;
+      }
+
+      speak(
+        ws,
+        'Posso responder dúvidas gerais como entrega, clique e retire, troca e devolução, ou posso consultar um pedido com validação por código. Como posso te ajudar?',
+      );
+      return;
+    }
+
     case 'CHOOSING_AUTH_CHANNEL': {
       const channel = parseChannelChoice(input);
       if (!channel) {
@@ -232,7 +255,6 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
     }
 
     case 'WAITING_CODE': {
-      // Preferência total: DTMF (vem 1 dígito por evento). Se vier fala com 6 dígitos, também funciona.
       const digitsOnly = String(input ?? '').replace(/\D/g, '');
 
       const next = (session.dtmfBuffer + digitsOnly).slice(0, 6);
@@ -276,6 +298,12 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
         }
       }
 
+      break;
+    }
+
+    case 'AUTHENTICATED': {
+      // após autenticar, já apresenta pedido
+      await presentLastOrder(ws, callSid, phone);
       break;
     }
 
@@ -391,11 +419,7 @@ async function presentLastOrder(ws: WebSocket, callSid: string, phone: string): 
   const order = getLastOrderByPhone(phone);
 
   if (!order) {
-    speak(
-      ws,
-      'Não encontrei pedidos recentes associados a este número. ' +
-        'Pode me dizer o número do pedido que quer consultar?',
-    );
+    speak(ws, 'Não encontrei pedidos recentes associados a este número. Pode me dizer o número do pedido que quer consultar?');
     updateSession(callSid, { state: 'WAITING_ORDER_ID' });
     return;
   }
@@ -410,17 +434,11 @@ async function presentLastOrder(ws: WebSocket, callSid: string, phone: string): 
 
   speak(
     ws,
-    `${prefix}Validado. Encontrei um pedido recente associado a este número: ` +
+    `${prefix}Encontrei um pedido recente associado a este número: ` +
       `pedido ${order.id}, ${order.itemSummary}, ` +
       `status ${order.statusLabel} com previsão ${order.eta}. ` +
       `É sobre esse pedido — diga um — ou sobre outro — diga dois?`,
   );
-
-  logger.info('last_order_presented', {
-    phone: maskPhone(phone),
-    orderId: order.id,
-    confidence: order.confidence,
-  });
 }
 
 async function doEscalate(ws: WebSocket, callSid: string, reason: string): Promise<void> {
@@ -429,15 +447,7 @@ async function doEscalate(ws: WebSocket, callSid: string, reason: string): Promi
 
   updateSession(callSid, { escalated: true, handoffReason: reason, state: 'ESCALATING' });
 
-  speak(ws, 'Vou te transferir para um atendente agora e já vou mandar um resumo pra você não precisar repetir. Um momento.');
-
-  logger.info('escalated', {
-    phone: maskPhone(session.phoneNumber),
-    callSid,
-    reason,
-    issueType: session.issueType,
-    orderId: session.orderId,
-  });
+  speak(ws, 'Vou te transferir para um atendente agora. Um momento.');
 
   try {
     const baseUrl = config.baseUrl;
@@ -526,12 +536,13 @@ export function createConversationRelayWss(path: string): WebSocketServer {
 
         speak(
           ws,
-          'Oi. Reconheci este número como cadastrado. ' +
-            'Antes de acessar seus pedidos, vou validar sua identidade rapidinho. ' +
-            'Quer receber o código por WhatsApp ou por SMS?',
+          'Olá! Eu sou o assistente virtual da Pague Menos. ' +
+            'Você pode me perguntar sobre entrega, clique e retire, troca e devolução ou canais de atendimento. ' +
+            'Se for sobre um pedido, eu faço uma validação rápida por código. ' +
+            'Como posso te ajudar?',
         );
 
-        updateSession(callSid, { state: 'CHOOSING_AUTH_CHANNEL' });
+        updateSession(callSid, { state: 'GREETING' });
         return;
       }
 
