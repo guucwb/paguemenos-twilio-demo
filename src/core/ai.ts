@@ -1,6 +1,7 @@
 // src/core/ai.ts
 type AIAnswer = { answer: string; shouldEscalate: boolean };
 
+// KB + regras anti-alucinação (demo-safe)
 const SYSTEM = `
 Você é um assistente de voz da Pague Menos (DEMO). Responda em pt-BR, direto, 1 a 3 frases.
 
@@ -14,13 +15,11 @@ KB (fontes oficiais):
 - Telefone: 0800 275 1313
 - E-mail: sac@pmenos.com.br
 - Atendimento: 7h às 23h
-(Fonte: institucional.paguemenos.com.br/servicos/sac-farma)
 
 2) Frete / Entrega:
 - Prazo e custo variam conforme localidade (CEP), disponibilidade dos itens e tipo de envio.
 - Para consultar prazo/valor, inserir o CEP na cesta/carrinho.
 - O prazo passa a contar após confirmação do pagamento.
-(Fonte: paguemenos.com.br/politica-de-frete)
 
 3) Clique & Retire:
 - Compra online e retirada na loja.
@@ -28,19 +27,18 @@ KB (fontes oficiais):
 - Não paga taxa de entrega.
 - Você tem até 15 dias úteis após confirmação para retirar; se não retirar, pode ser cancelado/estornado.
 - Para retirar, apresentar documento com foto do titular.
-(Fonte: paguemenos.com.br/clique-e-retire e política de frete)
 
 4) Troca / Devolução (resumo):
 - Troca: pode ser realizada em loja física; prazo de troca até 30 dias após recebimento.
 - Devolução: pode ser solicitada; prazo até 7 dias após recebimento (em casos previstos na política).
-(Fonte: paguemenos.com.br/politica-troca-devolucao)
 
 FORMATO DE SAÍDA:
 Retorne APENAS JSON no formato:
 {"answer":"...","shouldEscalate":false}
-`;
+`.trim();
 
 export async function answerFaqWithAI(userText: string): Promise<AIAnswer> {
+  // ✅ NOME CERTO DA VARIÁVEL (igual ao Railway)
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return { answer: '', shouldEscalate: true };
 
@@ -54,7 +52,7 @@ export async function answerFaqWithAI(userText: string): Promise<AIAnswer> {
       model: 'gpt-4.1-mini',
       temperature: 0.2,
       messages: [
-        { role: 'system', content: SYSTEM.trim() },
+        { role: 'system', content: SYSTEM },
         { role: 'user', content: userText },
       ],
       response_format: { type: 'json_object' },
@@ -65,7 +63,6 @@ export async function answerFaqWithAI(userText: string): Promise<AIAnswer> {
     return { answer: '', shouldEscalate: true };
   }
 
-  // ✅ Tipagem "any" para não travar build com TS
   const data: any = await resp.json();
   const content: string = data?.choices?.[0]?.message?.content ?? '{}';
 
