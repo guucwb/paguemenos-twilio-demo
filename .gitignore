@@ -1,0 +1,32 @@
+# Env / secrets — NUNCA commitar
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Data gerada pelo seed (não versionar dados reais)
+data/*.json
+data/*.sqlite
+data/*.db
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Coverage
+coverage/

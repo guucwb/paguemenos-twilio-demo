@@ -1,0 +1,40 @@
+{
+  "name": "paguemenos-twilio-demo",
+  "version": "1.0.0",
+  "description": "Demo enterprise Twilio (Voice+ConversationRelay+WhatsApp+Verify+Studio+Flex) para rede de farmácias",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "seed": "ts-node scripts/seed.ts",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "ws": "^8.17.1",
+    "twilio": "^5.3.2",
+    "uuid": "^10.0.0",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "express-validator": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/ws": "^8.5.12",
+    "@types/uuid": "^10.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5",
+    "ts-node": "^10.9.2",
+    "nodemon": "^3.1.4",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.5",
+    "@types/jest": "^29.5.12"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
