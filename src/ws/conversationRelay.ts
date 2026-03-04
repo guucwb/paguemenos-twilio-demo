@@ -14,7 +14,6 @@ import {
   detectIssueType,
   detectHumanRequest,
   detectUrgency,
-  shouldEscalate,
   resolveIssue,
   buildSummary,
   buildNextBestAction,
@@ -42,7 +41,9 @@ interface PromptEvent {
 
 interface DtmfEvent {
   type: 'dtmf';
-  digits: string;
+  // Pode vir como "digit" ou "digits" dependendo da versão
+  digit?: string;
+  digits?: string;
 }
 
 interface InterruptEvent {
@@ -61,6 +62,7 @@ function send(ws: WebSocket, payload: Record<string, unknown>): void {
 
 /** Envia texto para TTS */
 function speak(ws: WebSocket, text: string): void {
+  // Mantém o formato que já funcionou no seu ambiente
   send(ws, { type: 'text', token: text, last: true });
 }
 
@@ -77,17 +79,11 @@ function parseChannelChoice(input: string): 'whatsapp' | 'sms' | null {
   return null;
 }
 
-/** Extrai sequência de 6 dígitos de uma string */
-function extractCode(input: string): string | null {
-  const match = input.replace(/\s/g, '').match(/\d{6}/);
-  return match ? match[0] : null;
-}
-
 /** Detecta escolha 1 ou 2 */
 function parseChoice12(input: string): '1' | '2' | null {
-  const clean = input.trim().replace(/\D/g, '');
-  if (clean === '1') return '1';
-  if (clean === '2') return '2';
+  const cleanDigits = input.trim().replace(/\D/g, '');
+  if (cleanDigits === '1') return '1';
+  if (cleanDigits === '2') return '2';
   const lower = input.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (lower.includes('esse') || lower.includes('sim') || lower.includes('primeiro')) return '1';
   if (lower.includes('outro') || lower.includes('diferente') || lower.includes('nao')) return '2';
@@ -130,7 +126,6 @@ async function redirectCallToFlex(callSid: string, session: VoiceSession): Promi
       }),
     });
 
-    // Redireciona a chamada para enfileirar no TaskRouter
     const enqueueUrl =
       `<?xml version="1.0" encoding="UTF-8"?>` +
       `<Response>` +
@@ -154,6 +149,7 @@ async function callAuthStart(phoneNumber: string, channel: 'whatsapp' | 'sms'): 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phoneNumber, channel }),
   });
+  if (!resp.ok) throw new Error(`auth_start_http_${resp.status}`);
   return resp.json() as Promise<{ status: string }>;
 }
 
@@ -165,6 +161,7 @@ async function callAuthCheck(phoneNumber: string, code: string): Promise<{ appro
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phoneNumber, code }),
   });
+  if (!resp.ok) throw new Error(`auth_check_http_${resp.status}`);
   return resp.json() as Promise<{ approved: boolean }>;
 }
 
@@ -186,7 +183,6 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
     return;
   }
 
-  // ── Estados ───────────────────────────────────────────────────────────────
   switch (session.state) {
     case 'CHOOSING_AUTH_CHANNEL': {
       const channel = parseChannelChoice(input);
@@ -194,29 +190,38 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
         speak(ws, 'Desculpe, não entendi. Diga "WhatsApp" ou "SMS" para receber o código.');
         return;
       }
+
       updateSession(callSid, { authChannel: channel });
 
       try {
         await callAuthStart(phone, channel);
-        speak(ws,
+        speak(
+          ws,
           `Ok, enviei o código por ${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'}. ` +
-          `Me diga o código de 6 dígitos.`
+            `Agora, por favor, digite os 6 números no teclado do seu telefone.`
         );
-        updateSession(callSid, { state: 'WAITING_CODE' });
+        updateSession(callSid, { state: 'WAITING_CODE', dtmfBuffer: '' });
       } catch {
-        speak(ws,
-          'Tive um problema ao enviar o código. Quer tentar receber por SMS? Diga "SMS" ou "WhatsApp".'
-        );
+        speak(ws, 'Tive um problema ao enviar o código. Quer tentar receber por SMS? Diga "SMS" ou "WhatsApp".');
       }
       break;
     }
 
     case 'WAITING_CODE': {
-      const code = extractCode(input);
-      if (!code) {
-        speak(ws, 'Não ouvi o código corretamente. Me diga os 6 dígitos, por favor.');
+      // Preferência total: DTMF (vem 1 dígito por evento). Se vier fala com 6 dígitos, também funciona.
+      const digitsOnly = input.replace(/\D/g, '');
+
+      // acumula até 6
+      const next = (session.dtmfBuffer + digitsOnly).slice(0, 6);
+      updateSession(callSid, { dtmfBuffer: next });
+
+      if (next.length < 6) {
+        speak(ws, `Ok. Recebi ${next.length}. Digite os ${6 - next.length} números restantes.`);
         return;
       }
+
+      const code = next;
+      updateSession(callSid, { dtmfBuffer: '' });
 
       let approved = false;
       try {
@@ -234,16 +239,20 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
         await presentLastOrder(ws, callSid, phone);
       } else {
         const attempts = session.authAttempts + 1;
-        updateSession(callSid, { authAttempts: attempts, authStatus: attempts >= 2 ? 'failed' : 'pending' });
+        updateSession(callSid, {
+          authAttempts: attempts,
+          authStatus: attempts >= 2 ? 'failed' : 'pending',
+        });
 
         if (attempts >= 2) {
           logger.warn('auth_failed', { phone: maskPhone(phone), attempts });
           speak(ws, 'O código não confere por duas vezes. Por segurança, vou te transferir para um atendente.');
           await doEscalate(ws, callSid, 'auth_failed');
         } else {
-          speak(ws, 'Código incorreto. Tente novamente — me diga os 6 dígitos.');
+          speak(ws, 'Código incorreto. Digite novamente os 6 dígitos no teclado.');
         }
       }
+
       break;
     }
 
@@ -275,17 +284,24 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
 
       const order = getOrderById(orderId, phone);
       if (!order) {
-        speak(ws,
+        speak(
+          ws,
           `Não encontrei o pedido ${orderId} associado a este número. ` +
-          `Verifique o número e tente de novo, ou diga "atendente" para falar com alguém.`
+            `Verifique o número e tente de novo, ou diga "atendente" para falar com alguém.`
         );
         return;
       }
 
-      updateSession(callSid, { orderId: order.id, orderData: order as unknown as Record<string, unknown>, state: 'IDENTIFYING_ISSUE' });
-      speak(ws,
+      updateSession(callSid, {
+        orderId: order.id,
+        orderData: order as unknown as Record<string, unknown>,
+        state: 'IDENTIFYING_ISSUE',
+      });
+
+      speak(
+        ws,
         `Encontrei o pedido ${order.id}: ${order.itemSummary}, status ${order.statusLabel}. ` +
-        `Qual o problema? Atraso, item faltando ou outro?`
+          `Qual o problema? Atraso, item faltando ou outro?`
       );
       break;
     }
@@ -301,9 +317,10 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
           await doEscalate(ws, callSid, 'max_misunderstandings');
         } else {
           updateSession(callSid, { misunderstandCount: session.misunderstandCount + 1 });
-          speak(ws,
+          speak(
+            ws,
             'Não entendi bem. Pode descrever o problema de outra forma? ' +
-            'Por exemplo: "meu pedido atrasou", "veio um item errado", ou "tenho uma dúvida sobre cobrança".'
+              'Por exemplo: "meu pedido atrasou", "veio um item errado", ou "tenho uma dúvida sobre cobrança".'
           );
         }
         return;
@@ -316,7 +333,6 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
         return;
       }
 
-      // Garante que temos um orderId
       const orderId = session.orderId ?? (getLastOrderByPhone(phone)?.id ?? 'N/A');
       updateSession(callSid, { issueType: issue, orderId, state: 'RESOLVING' });
 
@@ -327,12 +343,9 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
         await doEscalate(ws, callSid, result.action);
       } else {
         logger.info('resolved', { phone: maskPhone(phone), orderId, issue, action: result.action });
-        speak(ws,
-          `${result.message} ` +
-          `Posso ajudar com mais alguma coisa?`
-        );
+        speak(ws, `${result.message} Posso ajudar com mais alguma coisa?`);
         updateSession(callSid, { state: 'DONE' });
-        // Aguarda 8s e encerra (usuário pode falar de novo; se não, a chamada termina)
+
         setTimeout(() => {
           endCall(ws);
           deleteSession(callSid);
@@ -342,7 +355,6 @@ async function handlePrompt(ws: WebSocket, session: VoiceSession, input: string)
     }
 
     case 'DONE':
-      // Nada mais a fazer
       endCall(ws);
       break;
 
@@ -356,9 +368,10 @@ async function presentLastOrder(ws: WebSocket, callSid: string, phone: string): 
   const order = getLastOrderByPhone(phone);
 
   if (!order) {
-    speak(ws,
+    speak(
+      ws,
       'Não encontrei pedidos recentes associados a este número. ' +
-      'Pode me dizer o número do pedido que quer consultar?'
+        'Pode me dizer o número do pedido que quer consultar?'
     );
     updateSession(callSid, { state: 'WAITING_ORDER_ID' });
     return;
@@ -370,15 +383,14 @@ async function presentLastOrder(ws: WebSocket, callSid: string, phone: string): 
     state: 'ORDER_PRESENTED',
   });
 
-  const prefix = order.confidence === 'low'
-    ? 'Posso estar vendo um pedido mais antigo. '
-    : '';
+  const prefix = order.confidence === 'low' ? 'Posso estar vendo um pedido mais antigo. ' : '';
 
-  speak(ws,
+  speak(
+    ws,
     `${prefix}Validado. Encontrei um pedido recente associado a este número: ` +
-    `pedido ${order.id}, ${order.itemSummary}, ` +
-    `status ${order.statusLabel} com previsão ${order.eta}. ` +
-    `É sobre esse pedido — diga um — ou sobre outro — diga dois?`
+      `pedido ${order.id}, ${order.itemSummary}, ` +
+      `status ${order.statusLabel} com previsão ${order.eta}. ` +
+      `É sobre esse pedido — diga um — ou sobre outro — diga dois?`
   );
 
   logger.info('last_order_presented', {
@@ -394,10 +406,7 @@ async function doEscalate(ws: WebSocket, callSid: string, reason: string): Promi
 
   updateSession(callSid, { escalated: true, handoffReason: reason, state: 'ESCALATING' });
 
-  // Avisa o usuário
-  speak(ws,
-    'Vou te transferir para um atendente agora e já vou mandar um resumo pra você não precisar repetir. Um momento.'
-  );
+  speak(ws, 'Vou te transferir para um atendente agora e já vou mandar um resumo pra você não precisar repetir. Um momento.');
 
   logger.info('escalated', {
     phone: maskPhone(session.phoneNumber),
@@ -407,7 +416,6 @@ async function doEscalate(ws: WebSocket, callSid: string, reason: string): Promi
     orderId: session.orderId,
   });
 
-  // Cria task no Flex (via REST interno)
   try {
     const baseUrl = config.baseUrl;
     await fetch(`${baseUrl}/api/flex/escalate`, {
@@ -452,12 +460,10 @@ async function doEscalate(ws: WebSocket, callSid: string, reason: string): Promi
     logger.error('escalate_flex_call_error', { error: String(err) });
   }
 
-  // Redireciona chamada para Flex (após 2s para TTS terminar)
   setTimeout(async () => {
     if (config.twilio.flexWorkflowSid) {
       await redirectCallToFlex(callSid, session);
     } else {
-      // Sem Flex configurado: apenas encerra
       endCall(ws);
     }
     deleteSession(callSid);
@@ -484,30 +490,32 @@ export function createConversationRelayWss(path: string): WebSocketServer {
         return;
       }
 
-      // ── setup: inicializa sessão ────────────────────────────────────────────
       if (event.type === 'setup') {
         callSid = event.callSid;
         const phone = event.from;
 
         const session = createSession(callSid, phone);
+
         logger.info('voice_session_created', {
           callSid,
           phone: maskPhone(phone),
         });
 
-        // Saudação imediata
-        speak(ws,
+        speak(
+          ws,
           'Oi. Reconheci este número como cadastrado. ' +
-          'Antes de acessar seus pedidos, vou validar sua identidade rapidinho. ' +
-          'Quer receber o código por WhatsApp ou por SMS?'
+            'Antes de acessar seus pedidos, vou validar sua identidade rapidinho. ' +
+            'Quer receber o código por WhatsApp ou por SMS?'
         );
+
         updateSession(callSid, { state: 'CHOOSING_AUTH_CHANNEL' });
         return;
       }
 
-      // ── prompt: fala do usuário ────────────────────────────────────────────
       if (event.type === 'prompt') {
-        if (!event.last) return; // aguarda utterância completa
+        const isLast = (event as any).last;
+        if (isLast === false) return;
+
         const session = getSession(callSid);
         if (!session) {
           logger.warn('ws_no_session', { callSid });
@@ -515,22 +523,23 @@ export function createConversationRelayWss(path: string): WebSocketServer {
           endCall(ws);
           return;
         }
-        await handlePrompt(ws, session, event.voicePrompt ?? '');
+
+        await handlePrompt(ws, session, (event as any).voicePrompt ?? '');
         return;
       }
 
-      // ── dtmf: tecla pressionada ────────────────────────────────────────────
       if (event.type === 'dtmf') {
         const session = getSession(callSid);
         if (!session) return;
-        // Trata DTMF como se fosse fala do dígito
-        await handlePrompt(ws, session, event.digits);
+
+        const digit = String((event as any).digits ?? (event as any).digit ?? '');
+        if (!digit) return;
+
+        await handlePrompt(ws, session, digit);
         return;
       }
 
-      // ── interrupt: usuário interrompeu ────────────────────────────────────
       if (event.type === 'interrupt') {
-        // ConversationRelay cuida de parar o TTS; apenas logamos
         logger.debug('ws_interrupt', { callSid });
         return;
       }

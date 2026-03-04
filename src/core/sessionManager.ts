@@ -18,31 +18,38 @@ export interface VoiceSession {
   callSid: string;
   phoneNumber: string;
   state: ConversationState;
+
   authStatus: 'pending' | 'approved' | 'failed';
   authAttempts: number;
   authChannel: 'whatsapp' | 'sms';
+
+  // NEW: buffer para acumular DTMF (1 dígito por evento)
+  dtmfBuffer: string;
+
   orderId?: string;
   orderData?: Record<string, unknown>;
   issueType?: IssueType;
+
   postAuthTurns: number;
   misunderstandCount: number;
   userRequestedHuman: boolean;
   urgencyDetected: boolean;
   escalated: boolean;
   handoffReason?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
 
 // ── Store em memória ──────────────────────────────────────────────────────────
-// Para produção de longo prazo: substituir por Redis.
-// Para demo: in-memory é suficiente (sessão de voz dura minutos).
+// Para produção: substituir por Redis.
+// Para demo: in-memory é suficiente.
 
 const sessions = new Map<string, VoiceSession>();
 
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hora
 
-// Limpeza periódica de sessões antigas (roda a cada 15 min)
+// Limpeza periódica de sessões antigas (a cada 15 min)
 setInterval(() => {
   const now = Date.now();
   for (const [key, session] of sessions.entries()) {
@@ -59,17 +66,23 @@ export function createSession(callSid: string, phoneNumber: string): VoiceSessio
     callSid,
     phoneNumber,
     state: 'GREETING',
+
     authStatus: 'pending',
     authAttempts: 0,
     authChannel: 'whatsapp',
+
+    dtmfBuffer: '',
+
     postAuthTurns: 0,
     misunderstandCount: 0,
     userRequestedHuman: false,
     urgencyDetected: false,
     escalated: false,
+
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+
   sessions.set(callSid, session);
   return session;
 }
