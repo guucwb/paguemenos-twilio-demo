@@ -449,6 +449,17 @@ async function doEscalate(ws: WebSocket, callSid: string, reason: string): Promi
 
   speak(ws, 'Vou te transferir para um atendente agora. Um momento.');
 
+  // ✅ Se Flex estiver configurado via Workflow, usa SÓ o redirect (não cria task duplicada)
+  const hasWorkflow = Boolean(config.twilio.flexWorkflowSid);
+  if (hasWorkflow) {
+    setTimeout(async () => {
+      await redirectCallToFlex(callSid, session);
+      deleteSession(callSid);
+    }, 2500);
+    return;
+  }
+
+  // Fallback: se não tiver workflow configurado, aí sim usa /api/flex/escalate
   try {
     const baseUrl = config.baseUrl;
     await fetch(`${baseUrl}/api/flex/escalate`, {
@@ -493,12 +504,9 @@ async function doEscalate(ws: WebSocket, callSid: string, reason: string): Promi
     logger.error('escalate_flex_call_error', { error: String(err) });
   }
 
-  setTimeout(async () => {
-    if (config.twilio.flexWorkflowSid) {
-      await redirectCallToFlex(callSid, session);
-    } else {
-      endCall(ws);
-    }
+  // sem workflow: encerra a call
+  setTimeout(() => {
+    endCall(ws);
     deleteSession(callSid);
   }, 2500);
 }
